@@ -14,6 +14,20 @@ import subprocess
 from typing import List, Dict
 from datetime import datetime
 from EasyLoggerAJM import EasyLogger
+from os.path import isdir
+
+import ctypes
+import winsound
+import tkinter.messagebox
+
+
+
+class WebServerEasyLogger(EasyLogger):
+    @classmethod
+    def smart_default_log_location(cls):
+        if isdir('../Misc_Project_Files'):
+            ...
+        raise NotImplementedError("not implemented yet.")
 
 
 class WebServerStatusCheck:
@@ -21,10 +35,24 @@ class WebServerStatusCheck:
 
     def __init__(self, server_web_address: str, server_ports: List[int] = None,
                  server_titles: Dict[int, str] = None, use_friendly_server_names: bool = True,
-                 server_web_page: str or None = None, silent_run: bool = False):
+                 server_web_page: str or None = None, silent_run: bool = False, use_msg_box_on_error: bool = True):
         self._machine_status = None
         self._silent_run = silent_run
         self._print_status = True
+        self._msgbox_defaulting_to_win = False
+        self._tk_msgbox_attempted = False
+
+        self.use_msg_box_on_error = use_msg_box_on_error
+
+        self.winapi_msg_box_styles = {
+            'OK': 0,
+            'OK_Cancel': 1,
+            'Abort_Retry _Ignore': 2,
+            'Yes_No_Cancel': 3,
+            'Yes_No': 4,
+            'Retry_Cancel': 5,
+            'Cancel_Try Again_Continue': 6,
+            'Above_All_OK': 0x1000}
 
         if not self.silent_run:
             print('initializing server status checker...')
@@ -47,6 +75,17 @@ class WebServerStatusCheck:
         self._full_status_string = None
         self._server_status_string = None
         self._page_status_string = None
+
+    def show_message_box(self, title: str, text: str, style: int):
+        if style not in self.winapi_msg_box_styles.values():
+            try:
+                raise AttributeError("given style is not valid! No message box will be displayed.")
+            except AttributeError as e:
+                print(self.logger.warning(e))
+                self.logger.warning(e)
+        winsound.MessageBeep(winsound.MB_ICONHAND)
+        # 0 == no parent window
+        return ctypes.windll.user32.MessageBoxW(0, text, title, style)
 
     @property
     def server_ports(self):
@@ -215,11 +254,26 @@ class WebServerStatusCheck:
     def full_status_string(self):
         self._full_status_string = (f"\t{datetime.now().ctime()}: System Status on port {self.active_server_port} is:"
                                     f"\n\t\tMachine is: {self.get_status_string(self.machine_status)}"
-                                    f"\n\t\tServer: \'{self.current_server_name}\' is "
+                                    f"\n\t\tServer: \'{self.current_server_name}\' on "
+                                    f"\n\t\tPort: {self.active_server_port} is "
                                     f"{self.get_status_string(self.server_status)}. "
-                                    f"\n\t\tPort: {self.active_server_port}"
                                     f"\n\t\tPage: \'{self.server_web_page or self.page_name}\' is "
                                     f"{self.get_status_string(self.page_status)}")
+        
+        if self.use_msg_box_on_error:
+            if not self.machine_status or not self.server_status or not self.page_status:
+                try:
+                    tkinter.messagebox.showerror(title="PART OR ALL OF SERVER DOWN",
+                                                 message=self._full_status_string.replace('\t', ''))
+                    self._tk_msgbox_attempted = True
+
+                except Exception as e:
+                    self.logger.warning(e)
+                    self._msgbox_defaulting_to_win = True
+                    self.show_message_box("PART OR ALL OF SERVER DOWN",
+                                          self._full_status_string.replace('\t', ''),
+                                          self.winapi_msg_box_styles['Above_All_OK'])
+
         return self._full_status_string
 
     @property
@@ -332,6 +386,7 @@ class WebServerStatusCheck:
         except Exception as e:
             self.logger.error(e, exc_info=True)
             raise e
+
 
 if __name__ == '__main__':
     WebServerStatusCheck('10.56.211.116', [80])
