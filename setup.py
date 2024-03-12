@@ -2,10 +2,10 @@ from setuptools import setup
 
 setup(
     name='WebServerStatusCheckerAJM',
-    version='1.0',
+    version='1.1',
     packages=['WebServerStatusCheckerAJM'],
     url='https://github.com/amcsparron2793-Water/WebServerStatusCheckerAJM',
-    download_url='https://github.com/amcsparron2793-Water/WebServerStatusCheckerAJM/archive/refs/tags/1.0.tar.gz',
+    download_url='https://github.com/amcsparron2793-Water/WebServerStatusCheckerAJM/archive/refs/tags/1.1.tar.gz',
     keywords=['Web Server', 'Server Status', 'Django Server', 'Apache Server'],
     install_requires=['requests', 'EasyLoggerAJM'],
     license='MIT License',
