@@ -263,10 +263,13 @@ class WebServerStatusCheck:
         if self.use_msg_box_on_error:
             if not self.machine_status or not self.server_status or not self.page_status:
                 try:
+                    tk = tkinter.Tk()
                     tkinter.messagebox.showerror(title="PART OR ALL OF SERVER DOWN",
                                                  message=self._full_status_string.replace('\t', ''))
                     self._tk_msgbox_attempted = True
-
+                    # FIXME: the tkinter msgbox crashes python because of its weird lil window thing
+                    #  will this help?
+                    tk.destroy()
                 except Exception as e:
                     self.logger.warning(e)
                     self._msgbox_defaulting_to_win = True
