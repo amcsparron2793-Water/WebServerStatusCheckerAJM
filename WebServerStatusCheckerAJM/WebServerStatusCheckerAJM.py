@@ -18,8 +18,6 @@ from os.path import isdir
 
 import ctypes
 import winsound
-import tkinter.messagebox
-
 
 
 class WebServerEasyLogger(EasyLogger):
@@ -35,12 +33,19 @@ class WebServerStatusCheck:
 
     def __init__(self, server_web_address: str, server_ports: List[int] = None,
                  server_titles: Dict[int, str] = None, use_friendly_server_names: bool = True,
-                 server_web_page: str or None = None, silent_run: bool = False, use_msg_box_on_error: bool = True):
+                 server_web_page: str or None = None, silent_run: bool = False,
+                 use_msg_box_on_error: bool = True, **kwargs):
+        self.init_msg = True
+        if kwargs:
+            self._kwargs = kwargs
+            if 'init_msg' in self._kwargs:
+                self.init_msg = self._kwargs['init_msg']
+            else:
+                pass
+
         self._machine_status = None
         self._silent_run = silent_run
         self._print_status = True
-        self._msgbox_defaulting_to_win = False
-        self._tk_msgbox_attempted = False
 
         self.use_msg_box_on_error = use_msg_box_on_error
 
@@ -52,9 +57,10 @@ class WebServerStatusCheck:
             'Yes_No': 4,
             'Retry_Cancel': 5,
             'Cancel_Try Again_Continue': 6,
-            'Above_All_OK': 0x1000}
+            'Above_All_OK': 0x1000,
+            'Error_Above_All_OK': 0x00000010}
 
-        if not self.silent_run:
+        if not self.silent_run and self.init_msg:
             print('initializing server status checker...')
 
         self._server_ports = server_ports
@@ -79,11 +85,23 @@ class WebServerStatusCheck:
     def show_message_box(self, title: str, text: str, style: int):
         if style not in self.winapi_msg_box_styles.values():
             try:
-                raise AttributeError("given style is not valid! No message box will be displayed.")
+                style = self.winapi_msg_box_styles['Error_Above_All_OK']
+            except KeyError as e:
+                print(f'Key Error: {e} is not a valid key for winapi_msg_box_styles')
+                self.logger.warning(f'Key Error: {e} is not a valid key for winapi_msg_box_styles')
+                style = None
+            try:
+                if not style:
+                    raise AttributeError("Given style is not valid and default failed!"
+                                         " Windows default message box will be displayed.")
             except AttributeError as e:
-                print(self.logger.warning(e))
+                print("Given style is not valid and default failed!"
+                      " Windows default message box will be displayed.")
                 self.logger.warning(e)
-        winsound.MessageBeep(winsound.MB_ICONHAND)
+        try:
+            winsound.MessageBeep(winsound.MB_ICONHAND)
+        except Exception as e:
+            self.logger.error(e, exc_info=True)
         # 0 == no parent window
         return ctypes.windll.user32.MessageBoxW(0, text, title, style)
 
@@ -96,7 +114,18 @@ class WebServerStatusCheck:
         if not self._server_ports:
             self._server_ports = [8000, 80]
         elif not isinstance(self._server_ports, list):
-            raise TypeError("server_ports must be a list of integers")
+            try:
+                raise TypeError("server_ports must be a list of integers")
+            except TypeError as e:
+                self.logger.error(e, exc_info=True)
+                raise e
+        for x in self._server_ports:
+            if not isinstance(x, int):
+                try:
+                    raise TypeError("server_ports must be a list of integers")
+                except TypeError as e:
+                    self.logger.error(e, exc_info=True)
+                    raise e
         return self._server_ports
 
     @property
@@ -134,9 +163,24 @@ class WebServerStatusCheck:
     def server_web_address(self):
         return self._server_web_address
 
+    # noinspection HttpUrlsUsage
     @server_web_address.getter
     def server_web_address(self):
         if isinstance(self._server_web_address, str):
+            if self._server_web_address.startswith('http://') or self._server_web_address.startswith('https://'):
+                pass
+            elif '://' in self._server_web_address:
+                warn_string = "non-http or https requests may not work"
+                self.logger.warning(warn_string)
+                if not self.silent_run:
+                    print(warn_string)
+            else:
+                warn_string = "no url scheme detected, defaulting to http."
+                self.logger.warning(warn_string)
+                if not self.silent_run:
+                    print(warn_string)
+                self._server_web_address = 'http://' + self._server_web_address
+
             if self._server_web_address.endswith('/'):
                 pass
             elif self._server_web_address.endswith('\\'):
@@ -259,23 +303,17 @@ class WebServerStatusCheck:
                                     f"{self.get_status_string(self.server_status)}. "
                                     f"\n\t\tPage: \'{self.server_web_page or self.page_name}\' is "
                                     f"{self.get_status_string(self.page_status)}")
-        
+
         if self.use_msg_box_on_error:
             if not self.machine_status or not self.server_status or not self.page_status:
                 try:
-                    tk = tkinter.Tk()
-                    tkinter.messagebox.showerror(title="PART OR ALL OF SERVER DOWN",
-                                                 message=self._full_status_string.replace('\t', ''))
-                    self._tk_msgbox_attempted = True
-                    # FIXME: the tkinter msgbox crashes python because of its weird lil window thing
-                    #  will this help?
-                    tk.destroy()
-                except Exception as e:
-                    self.logger.warning(e)
-                    self._msgbox_defaulting_to_win = True
                     self.show_message_box("PART OR ALL OF SERVER DOWN",
                                           self._full_status_string.replace('\t', ''),
-                                          self.winapi_msg_box_styles['Above_All_OK'])
+                                          self.winapi_msg_box_styles['Error_Above_All_OK'])
+
+                except Exception as e:
+                    self.logger.warning(f"could not show msgbox due to - {e}")
+                    print(f"could not show msgbox due to - {e}")
 
         return self._full_status_string
 
@@ -392,4 +430,5 @@ class WebServerStatusCheck:
 
 
 if __name__ == '__main__':
-    WebServerStatusCheck('10.56.211.116', [80])
+    WSSC = WebServerStatusCheck('http://10.56.211.116', [8100])
+    WSSC.MainLoop()
