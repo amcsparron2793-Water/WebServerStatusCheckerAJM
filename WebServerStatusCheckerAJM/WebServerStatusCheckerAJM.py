@@ -18,7 +18,7 @@ from os.path import isdir
 
 import ctypes
 import winsound
-from _version import __version__
+from WebServerStatusCheckerAJM._version import __version__
 
 
 class WebServerEasyLogger(EasyLogger):
