@@ -1,11 +1,19 @@
 from setuptools import setup
+import re
+project_name = 'WebServerStatusCheckerAJM'
+
+
+def get_property(prop, project):
+    result = re.search(r'{}\s*=\s*[\'"]([^\'"]*)[\'"]'.format(prop), open(project + '/_version.py').read())
+    return result.group(1)
+
 
 setup(
-    name='WebServerStatusCheckerAJM',
-    version='1.2',
+    name=project_name,
+    version=get_property('__version__', project_name),
     packages=['WebServerStatusCheckerAJM'],
     url='https://github.com/amcsparron2793-Water/WebServerStatusCheckerAJM',
-    download_url='https://github.com/amcsparron2793-Water/WebServerStatusCheckerAJM/archive/refs/tags/1.2.tar.gz',
+    download_url=f'https://github.com/amcsparron2793-Water/WebServerStatusCheckerAJM/archive/refs/tags/{get_property("__version__", project_name)}.tar.gz',
     keywords=['Web Server', 'Server Status', 'Django Server', 'Apache Server'],
     install_requires=['requests', 'EasyLoggerAJM'],
     license='MIT License',

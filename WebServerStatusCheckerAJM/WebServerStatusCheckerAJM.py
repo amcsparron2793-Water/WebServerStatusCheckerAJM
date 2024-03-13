@@ -18,6 +18,7 @@ from os.path import isdir
 
 import ctypes
 import winsound
+from _version import __version__
 
 
 class WebServerEasyLogger(EasyLogger):
@@ -61,7 +62,7 @@ class WebServerStatusCheck:
             'Error_Above_All_OK': 0x00000010}
 
         if not self.silent_run and self.init_msg:
-            print('initializing server status checker...')
+            print(f'Initializing server status checker v{__version__}...')
 
         self._server_ports = server_ports
         self._server_titles = server_titles
@@ -430,5 +431,7 @@ class WebServerStatusCheck:
 
 
 if __name__ == '__main__':
-    WSSC = WebServerStatusCheck('http://10.56.211.116', [8100])
+    sp = [8100]
+    print(f'ports are set to {sp}')
+    WSSC = WebServerStatusCheck('http://10.56.211.116', server_ports=sp)
     WSSC.MainLoop()
