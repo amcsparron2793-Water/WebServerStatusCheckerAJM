@@ -1,5 +1,6 @@
 import unittest
 from WebServerStatusCheckerAJM.WebServerStatusCheckerAJM import WebServerStatusCheck
+from WebServerStatusCheckerAJM._version import __version__
 
 
 class WSSCTests(unittest.TestCase):
@@ -34,6 +35,11 @@ class WSSCTests(unittest.TestCase):
         silent_run_silences_init_WSSC = WebServerStatusCheck('http://10.56.211.116/', [80, 8000],
                                                              silent_run=True)
         raise NotImplementedError("still working on this")
+
+    def test_can_import_version(self):
+        from sys import modules
+        self.assertIn('WebServerStatusCheckerAJM._version', modules)
+        print(__version__)
 
 
 if __name__ == '__main__':
