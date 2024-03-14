@@ -1,6 +1,5 @@
 import unittest
-from WebServerStatusCheckerAJM.WebServerStatusCheckerAJM import WebServerStatusCheck
-from WebServerStatusCheckerAJM._version import __version__
+from WebServerStatusCheckerAJM.WebServerStatusCheckerAJM import WebServerStatusCheck, __version__
 
 
 class WSSCTests(unittest.TestCase):
@@ -39,7 +38,7 @@ class WSSCTests(unittest.TestCase):
     def test_can_import_version(self):
         from sys import modules
         self.assertIn('WebServerStatusCheckerAJM._version', modules)
-        print(__version__)
+        self.assertIsNotNone(__version__)
 
 
 if __name__ == '__main__':
