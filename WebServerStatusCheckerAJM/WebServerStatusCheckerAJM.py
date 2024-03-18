@@ -10,6 +10,7 @@ import requests
 from time import sleep
 import platform
 import subprocess
+from re import fullmatch
 
 from typing import List, Dict
 from datetime import datetime
@@ -45,6 +46,8 @@ class WebServerStatusCheck:
                 pass
 
         self._machine_status = None
+        self._local_machine_ping_host = '8.8.8.8'
+        self._local_machine_status = None
         self._silent_run = silent_run
         self._print_status = True
 
@@ -285,11 +288,48 @@ class WebServerStatusCheck:
 
     @machine_status.getter
     def machine_status(self):
-        if self.ping():
-            self._machine_status = True
-        else:
-            self._machine_status = False
+        self._machine_status = False
+        if self.local_machine_status:
+            if self.ping():
+                self._machine_status = True
+            else:
+                self._machine_status = False
         return self._machine_status
+
+    @property
+    def local_machine_ping_host(self):
+        return self._local_machine_ping_host
+
+    @local_machine_ping_host.setter
+    def local_machine_ping_host(self, value):
+        try:
+            if fullmatch('^((\d{1,3}\.){3}(\d{1,3}))', value):
+                self._local_machine_ping_host = value
+            else:
+                try:
+                    raise AttributeError('must be a valid PLAIN IP address in the form of ddd.ddd.ddd'
+                                         ' or any other valid octet')
+                except AttributeError as e:
+                    self.logger.error(e, exc_info=True)
+                    raise e
+        except TypeError as e:
+            self.logger.error(e, exc_info=True)
+            raise e
+
+    @property
+    def local_machine_status(self):
+        return self._local_machine_status
+
+    @local_machine_status.getter
+    def local_machine_status(self):
+        """ pings a very high uptime server (one of googles public DNS servers,
+         or a given server through self.local_machine_ping_host)
+        to see if the machine on which the code is running, has any network connectivity at all."""
+        if self.ping(host=self.local_machine_ping_host):
+            self._local_machine_status = True
+        else:
+            self._local_machine_status = False
+        return self._local_machine_status
 
     @property
     def full_status_string(self):
@@ -298,6 +338,7 @@ class WebServerStatusCheck:
     @full_status_string.getter
     def full_status_string(self):
         self._full_status_string = (f"\t{datetime.now().ctime()}: System Status on port {self.active_server_port} is:"
+                                    f"\n\t\tLocal machine is: {self.get_status_string(self.local_machine_status)}"
                                     f"\n\t\tMachine is: {self.get_status_string(self.machine_status)}"
                                     f"\n\t\tServer: \'{self.current_server_name}\' on "
                                     f"\n\t\tPort: {self.active_server_port} is "
