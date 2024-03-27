@@ -451,15 +451,6 @@ class WebServerStatusCheck:
         if not self.is_down:
             pass
         else:
-            td = datetime.datetime.now().timestamp() - self.down_timestamp
-            """if td > 60:
-                pass
-            elif td <= 60:
-                m = round((td/60), 2)
-                if m > 60:
-                    m = round((m/60), 2)
-                if m > 24:
-                    m = round((m/24), 2)"""
             self._length_of_time_down = datetime.timedelta(
                 seconds=datetime.datetime.now().timestamp()) - datetime.timedelta(seconds=self.down_timestamp)
         return self._length_of_time_down
