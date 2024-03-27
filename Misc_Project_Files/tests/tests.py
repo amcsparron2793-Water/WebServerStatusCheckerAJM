@@ -1,4 +1,7 @@
+from datetime import timedelta
 import unittest
+from time import sleep
+
 from WebServerStatusCheckerAJM.WebServerStatusCheckerAJM import WebServerStatusCheck, __version__
 
 
@@ -79,6 +82,20 @@ class WSSCTests(unittest.TestCase):
     def test_local_machine_status_port_raises_TypeError_on_int_ip_str(self):
         with self.assertRaises(TypeError):
             self.good_ports_WSSC.local_machine_ping_host = 1234
+
+    def test_downtime_makes_sense(self):
+        self.bad_port_WSSC.active_server_port = self.bad_port_WSSC.server_ports[1]
+        print(self.bad_port_WSSC.full_status_string)
+
+        s_time = 5
+        print(f"sleeping for {s_time} secs")
+        sleep(s_time)
+        self.assertGreaterEqual(self.bad_port_WSSC.length_of_time_down, timedelta(seconds=s_time))
+
+    def test_not_down_length_of_time_down_is_none(self):
+        print(self.good_ports_WSSC.full_status_string)
+        self.assertEqual(self.good_ports_WSSC.length_of_time_down, 0)
+        self.assertIsNone(self.good_ports_WSSC.down_timestamp)
 
 
 if __name__ == '__main__':

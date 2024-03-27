@@ -5,6 +5,7 @@ Pings a machine to see if it is up, then checks for the presence of a given http
  (originally conceived for use with Django and Apache).
 
 """
+import datetime
 
 import requests
 from time import sleep
@@ -13,7 +14,6 @@ import subprocess
 from re import fullmatch
 
 from typing import List, Dict
-from datetime import datetime
 from EasyLoggerAJM import EasyLogger
 from os.path import isdir
 
@@ -37,13 +37,17 @@ class WebServerStatusCheck:
                  server_titles: Dict[int, str] = None, use_friendly_server_names: bool = True,
                  server_web_page: str or None = None, silent_run: bool = False,
                  use_msg_box_on_error: bool = True, **kwargs):
-        self.init_msg = True
+        self.init_msg: bool = True
         if kwargs:
             self._kwargs = kwargs
             if 'init_msg' in self._kwargs:
-                self.init_msg = self._kwargs['init_msg']
+                self.init_msg: bool = self._kwargs['init_msg']
             else:
                 pass
+
+        self._is_down = False
+        self._length_of_time_down = 0
+        self._down_timestamp: datetime.datetime or None = None
 
         self._machine_status = None
         self._local_machine_ping_host = '8.8.8.8'
@@ -337,7 +341,7 @@ class WebServerStatusCheck:
 
     @full_status_string.getter
     def full_status_string(self):
-        self._full_status_string = (f"\t{datetime.now().ctime()}: System Status on port {self.active_server_port} is:"
+        self._full_status_string = (f"\t{datetime.datetime.now().ctime()}: System Status on port {self.active_server_port} is:"
                                     f"\n\t\tLocal machine is: {self.get_status_string(self.local_machine_status)}"
                                     f"\n\t\tMachine is: {self.get_status_string(self.machine_status)}"
                                     f"\n\t\tServer: \'{self.current_server_name}\' on "
@@ -356,6 +360,10 @@ class WebServerStatusCheck:
                 except Exception as e:
                     self.logger.warning(f"could not show msgbox due to - {e}")
                     print(f"could not show msgbox due to - {e}")
+        if not self.machine_status or not self.server_status or not self.page_status:
+            # this is here purely to make sure down_timestamp is set when the page goes down.
+            x = self.down_timestamp
+            del x
 
         return self._full_status_string
 
@@ -408,6 +416,53 @@ class WebServerStatusCheck:
             x = req_content.split('<title>')[-1]
             if '</title>' in x:
                 self._html_title = x.split('</title>')[0]
+
+    @property
+    def is_down(self):
+        return self._is_down
+
+    @is_down.getter
+    def is_down(self):
+        if not self.local_machine_status or not self.machine_status or not self.server_status or not self.page_status:
+            self._is_down = True
+        else:
+            self._is_down = False
+        return self._is_down
+
+    @property
+    def down_timestamp(self):
+        return self._down_timestamp
+
+    @down_timestamp.getter
+    def down_timestamp(self):
+        if self.is_down and not self._down_timestamp:
+            self._down_timestamp = datetime.datetime.now().timestamp()
+        elif not self.is_down:
+            self._down_timestamp = None
+        return self._down_timestamp
+
+
+    @property
+    def length_of_time_down(self) -> int:
+        return self._length_of_time_down
+
+    @length_of_time_down.getter
+    def length_of_time_down(self):
+        if not self.is_down:
+            pass
+        else:
+            td = datetime.datetime.now().timestamp() - self.down_timestamp
+            """if td > 60:
+                pass
+            elif td <= 60:
+                m = round((td/60), 2)
+                if m > 60:
+                    m = round((m/60), 2)
+                if m > 24:
+                    m = round((m/24), 2)"""
+            self._length_of_time_down = datetime.timedelta(
+                seconds=datetime.datetime.now().timestamp()) - datetime.timedelta(seconds=self.down_timestamp)
+        return self._length_of_time_down
 
     def log_status(self) -> None:
         if self.server_status:
