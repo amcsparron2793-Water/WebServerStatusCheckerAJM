@@ -307,7 +307,7 @@ class WebServerStatusCheck:
     @local_machine_ping_host.setter
     def local_machine_ping_host(self, value):
         try:
-            if fullmatch('^((\d{1,3}\.){3}(\d{1,3}))', value):
+            if fullmatch(r'^((\d{1,3}\.){3}(\d{1,3}))', value):
                 self._local_machine_ping_host = value
             else:
                 try:
@@ -440,7 +440,6 @@ class WebServerStatusCheck:
         elif not self.is_down:
             self._down_timestamp = None
         return self._down_timestamp
-
 
     @property
     def length_of_time_down(self) -> int:
