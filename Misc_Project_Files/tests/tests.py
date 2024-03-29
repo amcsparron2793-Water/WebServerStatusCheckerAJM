@@ -9,10 +9,12 @@ class WSSCTests(unittest.TestCase):
     def setUp(self) -> None:
         self.bad_port_WSSC = WebServerStatusCheck('http://10.56.211.116/', [80, 8010],
                                                   silent_run=True)
+        self.bad_port_WSSC.active_server_port = self.bad_port_WSSC.server_ports[1]
         self.good_ports_WSSC = WebServerStatusCheck('http://10.56.211.116/', [80, 8000],
                                                     silent_run=True)
-        self.no_box_WSSC = WebServerStatusCheck('http://10.56.211.116/', [80, 8000],
+        self.no_box_WSSC = WebServerStatusCheck('http://10.56.211.116/', [80, 8010],
                                                 use_msg_box_on_error=False, silent_run=True)
+        self.no_box_WSSC.active_server_port = self.no_box_WSSC.server_ports[1]
 
     def test_server_ports_not_int_fail(self):
         with self.assertRaises(TypeError):
@@ -20,6 +22,7 @@ class WSSCTests(unittest.TestCase):
 
     def test_server_ports_not_list_fail(self):
         with self.assertRaises(TypeError):
+            # noinspection PyTypeChecker
             WebServerStatusCheck('http://10.56.211.116/', (80, 'teta'))
 
     def test_no_init_msg_true(self):
@@ -84,18 +87,45 @@ class WSSCTests(unittest.TestCase):
             self.good_ports_WSSC.local_machine_ping_host = 1234
 
     def test_downtime_makes_sense(self):
-        self.bad_port_WSSC.active_server_port = self.bad_port_WSSC.server_ports[1]
-        print(self.bad_port_WSSC.full_status_string)
+        for p in self.bad_port_WSSC.server_ports:
+            self.bad_port_WSSC.active_server_port = p
+            print(self.bad_port_WSSC.full_status_string)
 
-        s_time = 5
-        print(f"sleeping for {s_time} secs")
-        sleep(s_time)
-        self.assertGreaterEqual(self.bad_port_WSSC.length_of_time_down, timedelta(seconds=s_time))
+            s_time = timedelta(seconds=5)
+            sleep_time_plus_deadzone = timedelta(seconds=s_time.seconds + 3)
+            # {chr(177)} can also be used for +-
+            print(f"Sleeping for {s_time}. \nAssertion time with dead-zone is \xB1 {sleep_time_plus_deadzone}")
+            sleep(s_time.total_seconds())
+            lotd = self.bad_port_WSSC.length_of_time_down
+            if self.bad_port_WSSC.is_down:
+                # make sure it actually slept for at least s_time if not more,
+                # but not more than sleep_time_plus_deadzone
+                self.assertGreaterEqual(lotd, timedelta(seconds=s_time.total_seconds()))
+                self.assertLessEqual(lotd, timedelta(seconds=sleep_time_plus_deadzone.total_seconds()))
+                print(f"actual downtime was {lotd}")
+            else:
+                print(timedelta(seconds=0), lotd)
+                self.assertEqual(timedelta(seconds=0), lotd)
+            print(f"Port {p} test complete.\n")
 
     def test_not_down_length_of_time_down_is_none(self):
         print(self.good_ports_WSSC.full_status_string)
-        self.assertEqual(self.good_ports_WSSC.length_of_time_down, 0)
+        self.assertEqual(self.good_ports_WSSC.length_of_time_down, timedelta(seconds=0))
         self.assertIsNone(self.good_ports_WSSC.down_timestamp)
+
+    @staticmethod
+    def _get_window_list():
+        # this comes as part of pywin32
+        from win32gui import IsWindowVisible, GetWindowText, EnumWindows
+        window_list = []
+
+        def winEnumHandler(hwnd, ctx):
+            if IsWindowVisible(hwnd) and GetWindowText(hwnd):
+                #print(hex(hwnd), win32gui.GetWindowText(hwnd))
+                window_list.append(GetWindowText(hwnd))
+
+        EnumWindows(winEnumHandler, None)
+        return window_list
 
 
 if __name__ == '__main__':

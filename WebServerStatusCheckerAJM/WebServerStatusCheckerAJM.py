@@ -46,7 +46,7 @@ class WebServerStatusCheck:
                 pass
 
         self._is_down = False
-        self._length_of_time_down = 0
+        self._length_of_time_down = datetime.timedelta()
         self._down_timestamp: datetime.datetime or None = None
 
         self._machine_status = None
@@ -341,7 +341,9 @@ class WebServerStatusCheck:
 
     @full_status_string.getter
     def full_status_string(self):
-        self._full_status_string = (f"\t{datetime.datetime.now().ctime()}: System Status on port {self.active_server_port} is:"
+        # this was made a variable purely to make the full_status_string declaration more readable.
+        cur_datetime = datetime.datetime.now().ctime()
+        self._full_status_string = (f"\t{cur_datetime}: System Status on port {self.active_server_port} is:"
                                     f"\n\t\tLocal machine is: {self.get_status_string(self.local_machine_status)}"
                                     f"\n\t\tMachine is: {self.get_status_string(self.machine_status)}"
                                     f"\n\t\tServer: \'{self.current_server_name}\' on "
@@ -349,9 +351,8 @@ class WebServerStatusCheck:
                                     f"{self.get_status_string(self.server_status)}. "
                                     f"\n\t\tPage: \'{self.server_web_page or self.page_name}\' is "
                                     f"{self.get_status_string(self.page_status)}")
-
-        if self.use_msg_box_on_error:
-            if not self.machine_status or not self.server_status or not self.page_status:
+        if self.is_down:
+            if self.use_msg_box_on_error:
                 try:
                     self.show_message_box("PART OR ALL OF SERVER DOWN",
                                           self._full_status_string.replace('\t', ''),
@@ -360,7 +361,7 @@ class WebServerStatusCheck:
                 except Exception as e:
                     self.logger.warning(f"could not show msgbox due to - {e}")
                     print(f"could not show msgbox due to - {e}")
-        if not self.machine_status or not self.server_status or not self.page_status:
+
             # this is here purely to make sure down_timestamp is set when the page goes down.
             x = self.down_timestamp
             del x
@@ -442,16 +443,16 @@ class WebServerStatusCheck:
         return self._down_timestamp
 
     @property
-    def length_of_time_down(self) -> int:
+    def length_of_time_down(self) -> datetime.timedelta:
         return self._length_of_time_down
 
     @length_of_time_down.getter
-    def length_of_time_down(self):
+    def length_of_time_down(self) -> datetime.timedelta:
         if not self.is_down:
             pass
         else:
-            self._length_of_time_down = datetime.timedelta(
-                seconds=datetime.datetime.now().timestamp()) - datetime.timedelta(seconds=self.down_timestamp)
+            self._length_of_time_down = (datetime.timedelta(seconds=datetime.datetime.now().timestamp())
+                                         - datetime.timedelta(seconds=self.down_timestamp))
         return self._length_of_time_down
 
     def log_status(self) -> None:
