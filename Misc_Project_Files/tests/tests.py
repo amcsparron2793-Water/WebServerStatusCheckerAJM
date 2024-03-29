@@ -87,6 +87,7 @@ class WSSCTests(unittest.TestCase):
             self.good_ports_WSSC.local_machine_ping_host = 1234
 
     def test_downtime_makes_sense(self):
+        self.bad_port_WSSC.use_msg_box_on_error = False
         for p in self.bad_port_WSSC.server_ports:
             self.bad_port_WSSC.active_server_port = p
             print(self.bad_port_WSSC.full_status_string)
