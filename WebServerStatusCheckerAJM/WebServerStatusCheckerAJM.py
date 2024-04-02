@@ -19,7 +19,10 @@ from os.path import isdir
 
 import ctypes
 import winsound
-from WebServerStatusCheckerAJM._version import __version__
+try:
+    from WebServerStatusCheckerAJM._version import __version__
+except ModuleNotFoundError:
+    __version__ = "test"
 
 
 class WebServerEasyLogger(EasyLogger):
@@ -36,7 +39,7 @@ class WebServerStatusCheck:
     def __init__(self, server_web_address: str, server_ports: List[int] = None,
                  server_titles: Dict[int, str] = None, use_friendly_server_names: bool = True,
                  server_web_page: str or None = None, silent_run: bool = False,
-                 use_msg_box_on_error: bool = True, **kwargs):
+                 use_msg_box_on_error: bool = True, use_msg_box_on_recovery:bool = True, **kwargs):
         self.init_msg: bool = True
         if kwargs:
             self._kwargs = kwargs
@@ -46,6 +49,7 @@ class WebServerStatusCheck:
                 pass
 
         self._is_down = False
+        self._all_systems_up = True
         self._length_of_time_down = datetime.timedelta()
         self._down_timestamp: datetime.datetime or None = None
 
@@ -56,6 +60,7 @@ class WebServerStatusCheck:
         self._print_status = True
 
         self.use_msg_box_on_error = use_msg_box_on_error
+        self.use_msg_box_on_recovery = use_msg_box_on_recovery
 
         self.winapi_msg_box_styles = {
             'OK': 0,
@@ -365,6 +370,29 @@ class WebServerStatusCheck:
             # this is here purely to make sure down_timestamp is set when the page goes down.
             x = self.down_timestamp
             del x
+        if self.all_systems_up and (self.length_of_time_down > datetime.timedelta(seconds=0)):
+            cur_datetime = datetime.datetime.now().ctime()
+            self._full_status_string = (f"\t{cur_datetime}: System Status on port {self.active_server_port} is:"
+                                        f"\n\t\tLocal machine is: {self.get_status_string(self.local_machine_status)}"
+                                        f"\n\t\tMachine is: {self.get_status_string(self.machine_status)}"
+                                        f"\n\t\tServer: \'{self.current_server_name}\' on "
+                                        f"\n\t\tPort: {self.active_server_port} is "
+                                        f"{self.get_status_string(self.server_status)}. "
+                                        f"\n\t\tPage: \'{self.server_web_page or self.page_name}\' is "
+                                        f"{self.get_status_string(self.page_status)}")
+            back_online_string = f"SYSTEM BACK ONLINE - was down for {self.length_of_time_down}\n"
+            self._full_status_string = back_online_string + self._full_status_string.replace('\t', '').strip()
+            if self.use_msg_box_on_recovery:
+                try:
+                    self.show_message_box(title=back_online_string.split(' - ')[0].strip(),
+                                          text=self._full_status_string,
+                                          style=self.winapi_msg_box_styles['OK'])
+                except Exception as e:
+                    self.logger.warning(f"could not show msgbox due to - {e}")
+                    print(f"could not show msgbox due to - {e}")
+
+            self._full_status_string = back_online_string + self._full_status_string
+            self.length_of_time_down = datetime.timedelta(seconds=0)
 
         return self._full_status_string
 
@@ -431,6 +459,21 @@ class WebServerStatusCheck:
         return self._is_down
 
     @property
+    def all_systems_up(self):
+        return self._all_systems_up
+
+    @all_systems_up.getter
+    def all_systems_up(self):
+        for x in self.server_ports:
+            self.active_server_port = x
+            if self.local_machine_status and self.machine_status and self.server_status and self.page_status:
+                self._all_systems_up = True
+            else:
+                self._all_systems_up = False
+                break
+        return self._all_systems_up
+
+    @property
     def down_timestamp(self):
         return self._down_timestamp
 
@@ -453,7 +496,12 @@ class WebServerStatusCheck:
         else:
             self._length_of_time_down = (datetime.timedelta(seconds=datetime.datetime.now().timestamp())
                                          - datetime.timedelta(seconds=self.down_timestamp))
+            #if self._length_of_time_down >
         return self._length_of_time_down
+
+    @length_of_time_down.setter
+    def length_of_time_down(self, value: datetime.timedelta):
+        self._length_of_time_down = value
 
     def log_status(self) -> None:
         if self.server_status:
@@ -518,7 +566,7 @@ class WebServerStatusCheck:
 
 
 if __name__ == '__main__':
-    sp = [8100]
+    sp = [80, 8000]
     print(f'ports are set to {sp}')
     WSSC = WebServerStatusCheck('http://10.56.211.116', server_ports=sp)
     WSSC.MainLoop()
