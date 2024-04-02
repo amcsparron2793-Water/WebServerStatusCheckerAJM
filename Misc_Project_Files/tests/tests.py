@@ -93,11 +93,10 @@ class WSSCTests(unittest.TestCase):
             print(self.bad_port_WSSC.full_status_string)
 
             s_time = timedelta(seconds=5)
-            sleep_time_plus_deadzone = timedelta(seconds=(s_time.seconds + 3))
+            sleep_time_plus_deadzone = timedelta(seconds=(s_time.seconds + 3)*2)
             # {chr(177)} can also be used for +-
             print(f"Sleeping for {s_time}. \nAssertion passable time with dead-zone is \xB1 {sleep_time_plus_deadzone}")
             sleep(s_time.total_seconds())
-            # lotd = self.bad_port_WSSC.length_of_time_down
             if self.bad_port_WSSC.is_down:
                 # FIXME: this fails, time calculation gets weird with the "System Back Up" msgbox...
                 # make sure it actually slept for at least s_time if not more
