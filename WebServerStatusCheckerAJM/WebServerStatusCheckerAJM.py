@@ -31,45 +31,32 @@ class WebServerEasyLogger(EasyLogger):
 
 
 class WebServerStatusCheck:
-    logger = EasyLogger.UseLogger().logger
+    LOGGER = EasyLogger.UseLogger().logger
+    WINAPI_MSG_BOX_STYLES = {
+        'OK': 0,
+        'OK_Cancel': 1,
+        'Abort_Retry _Ignore': 2,
+        'Yes_No_Cancel': 3,
+        'Yes_No': 4,
+        'Retry_Cancel': 5,
+        'Cancel_Try Again_Continue': 6,
+        'Above_All_OK': 0x1000,
+        'Error_Above_All_OK': 0x00000010}
 
     def __init__(self, server_web_address: str, server_ports: List[int] = None,
                  server_titles: Dict[int, str] = None, use_friendly_server_names: bool = True,
                  server_web_page: str or None = None, silent_run: bool = False,
                  use_msg_box_on_error: bool = True, **kwargs):
-        self.init_msg: bool = True
-        if kwargs:
-            self._kwargs = kwargs
-            if 'init_msg' in self._kwargs:
-                self.init_msg: bool = self._kwargs['init_msg']
-            else:
-                pass
 
-        self._is_down = False
-        self._length_of_time_down = datetime.timedelta()
-        self._down_timestamp: datetime.datetime or None = None
-
-        self._machine_status = None
-        self._local_machine_ping_host = '8.8.8.8'
-        self._local_machine_status = None
+        self.init_msg: bool = kwargs.get('init_msg', True)
         self._silent_run = silent_run
-        self._print_status = True
 
         self.use_msg_box_on_error = use_msg_box_on_error
 
-        self.winapi_msg_box_styles = {
-            'OK': 0,
-            'OK_Cancel': 1,
-            'Abort_Retry _Ignore': 2,
-            'Yes_No_Cancel': 3,
-            'Yes_No': 4,
-            'Retry_Cancel': 5,
-            'Cancel_Try Again_Continue': 6,
-            'Above_All_OK': 0x1000,
-            'Error_Above_All_OK': 0x00000010}
-
         if not self.silent_run and self.init_msg:
             print(f'Initializing server status checker v{__version__}...')
+
+        self._initialize_property_vars()
 
         self._server_ports = server_ports
         self._server_titles = server_titles
@@ -78,6 +65,16 @@ class WebServerStatusCheck:
 
         self._server_web_address = server_web_address
         self._server_web_page = server_web_page
+
+    def _initialize_property_vars(self):
+        self._is_down = False
+        self._length_of_time_down = datetime.timedelta()
+        self._down_timestamp: datetime.datetime or None = None
+
+        self._machine_status = None
+        self._local_machine_ping_host = '8.8.8.8'
+        self._local_machine_status = None
+        self._print_status = True
 
         self._html_title = None
         self._page_name = None
@@ -91,12 +88,12 @@ class WebServerStatusCheck:
         self._page_status_string = None
 
     def show_message_box(self, title: str, text: str, style: int):
-        if style not in self.winapi_msg_box_styles.values():
+        if style not in self.WINAPI_MSG_BOX_STYLES.values():
             try:
-                style = self.winapi_msg_box_styles['Error_Above_All_OK']
+                style = self.WINAPI_MSG_BOX_STYLES['Error_Above_All_OK']
             except KeyError as e:
                 print(f'Key Error: {e} is not a valid key for winapi_msg_box_styles')
-                self.logger.warning(f'Key Error: {e} is not a valid key for winapi_msg_box_styles')
+                self.LOGGER.warning(f'Key Error: {e} is not a valid key for winapi_msg_box_styles')
                 style = None
             try:
                 if not style:
@@ -105,11 +102,11 @@ class WebServerStatusCheck:
             except AttributeError as e:
                 print("Given style is not valid and default failed!"
                       " Windows default message box will be displayed.")
-                self.logger.warning(e)
+                self.LOGGER.warning(e)
         try:
             winsound.MessageBeep(winsound.MB_ICONHAND)
         except Exception as e:
-            self.logger.error(e, exc_info=True)
+            self.LOGGER.error(e, exc_info=True)
         # 0 == no parent window
         return ctypes.windll.user32.MessageBoxW(0, text, title, style)
 
@@ -125,14 +122,14 @@ class WebServerStatusCheck:
             try:
                 raise TypeError("server_ports must be a list of integers")
             except TypeError as e:
-                self.logger.error(e, exc_info=True)
+                self.LOGGER.error(e, exc_info=True)
                 raise e
         for x in self._server_ports:
             if not isinstance(x, int):
                 try:
                     raise TypeError("server_ports must be a list of integers")
                 except TypeError as e:
-                    self.logger.error(e, exc_info=True)
+                    self.LOGGER.error(e, exc_info=True)
                     raise e
         return self._server_ports
 
@@ -179,12 +176,12 @@ class WebServerStatusCheck:
                 pass
             elif '://' in self._server_web_address:
                 warn_string = "non-http or https requests may not work"
-                self.logger.warning(warn_string)
+                self.LOGGER.warning(warn_string)
                 if not self.silent_run:
                     print(warn_string)
             else:
                 warn_string = "no url scheme detected, defaulting to http."
-                self.logger.warning(warn_string)
+                self.LOGGER.warning(warn_string)
                 if not self.silent_run:
                     print(warn_string)
                 self._server_web_address = 'http://' + self._server_web_address
@@ -314,10 +311,10 @@ class WebServerStatusCheck:
                     raise AttributeError('must be a valid PLAIN IP address in the form of ddd.ddd.ddd'
                                          ' or any other valid octet')
                 except AttributeError as e:
-                    self.logger.error(e, exc_info=True)
+                    self.LOGGER.error(e, exc_info=True)
                     raise e
         except TypeError as e:
-            self.logger.error(e, exc_info=True)
+            self.LOGGER.error(e, exc_info=True)
             raise e
 
     @property
@@ -356,10 +353,10 @@ class WebServerStatusCheck:
                 try:
                     self.show_message_box("PART OR ALL OF SERVER DOWN",
                                           self._full_status_string.replace('\t', ''),
-                                          self.winapi_msg_box_styles['Error_Above_All_OK'])
+                                          self.WINAPI_MSG_BOX_STYLES['Error_Above_All_OK'])
 
                 except Exception as e:
-                    self.logger.warning(f"could not show msgbox due to - {e}")
+                    self.LOGGER.warning(f"could not show msgbox due to - {e}")
                     print(f"could not show msgbox due to - {e}")
 
             # this is here purely to make sure down_timestamp is set when the page goes down.
@@ -398,13 +395,13 @@ class WebServerStatusCheck:
             try:
                 self._current_server_name = self.server_titles[self.active_server_port]
             except TypeError:
-                self.logger.warning("defaulting to non-friendly server_names due to error")
+                self.LOGGER.warning("defaulting to non-friendly server_names due to error")
                 pass
             except KeyError:
-                self.logger.warning("defaulting to non-friendly server_names due to error")
+                self.LOGGER.warning("defaulting to non-friendly server_names due to error")
                 pass
             except Exception:
-                self.logger.warning("defaulting to non-friendly server_names due to error")
+                self.LOGGER.warning("defaulting to non-friendly server_names due to error")
                 pass
         if not self._current_server_name:
             self._current_server_name = self.server_web_address
@@ -458,11 +455,11 @@ class WebServerStatusCheck:
     def log_status(self) -> None:
         if self.server_status:
             if self.page_status:
-                self.logger.info(self.full_status_string)
+                self.LOGGER.info(self.full_status_string)
             else:
-                self.logger.warning(self.full_status_string)
+                self.LOGGER.warning(self.full_status_string)
         else:
-            self.logger.critical(self.full_status_string)
+            self.LOGGER.critical(self.full_status_string)
 
     @staticmethod
     def get_status_string(status_bool: bool) -> str:
@@ -513,7 +510,7 @@ class WebServerStatusCheck:
             sleep(1)
             exit(-1)
         except Exception as e:
-            self.logger.error(e, exc_info=True)
+            self.LOGGER.error(e, exc_info=True)
             raise e
 
 
