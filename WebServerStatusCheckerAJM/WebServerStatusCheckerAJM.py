@@ -90,38 +90,11 @@ class WebServerStatusCheck(ServerAddressPort, ComponentStatus, TitlesNames):
         self._server_status_string = None
         self._page_status_string = None
 
-    def show_message_box(self, title: str, text: str, style: int):
-        if style not in self.WINAPI_MSG_BOX_STYLES.values():
-            try:
-                style = self.WINAPI_MSG_BOX_STYLES['Error_Above_All_OK']
-            except KeyError as e:
-                print(f'Key Error: {e} is not a valid key for winapi_msg_box_styles')
-                self.LOGGER.warning(f'Key Error: {e} is not a valid key for winapi_msg_box_styles')
-                style = None
-            try:
-                if not style:
-                    raise AttributeError("Given style is not valid and default failed!"
-                                         " Windows default message box will be displayed.")
-            except AttributeError as e:
-                print("Given style is not valid and default failed!"
-                      " Windows default message box will be displayed.")
-                self.LOGGER.warning(e)
-        try:
-            winsound.MessageBeep(winsound.MB_ICONHAND)
-        except Exception as e:
-            self.LOGGER.error(e, exc_info=True)
-        # 0 == no parent window
-        return ctypes.windll.user32.MessageBoxW(0, text, title, style)
-
     @property
     def silent_run(self):
         return self._silent_run
 
     @property
-    def print_status(self):
-        return self._print_status
-
-    @print_status.getter
     def print_status(self):
         if self.silent_run:
             self._print_status = False
@@ -142,10 +115,6 @@ class WebServerStatusCheck(ServerAddressPort, ComponentStatus, TitlesNames):
         self._just_started = value
 
     @property
-    def full_status_string(self):
-        return self._full_status_string
-
-    @full_status_string.getter
     def full_status_string(self):
         # this was made a variable purely to make the full_status_string declaration more readable.
         cur_datetime = datetime.datetime.now().ctime()
@@ -174,13 +143,7 @@ class WebServerStatusCheck(ServerAddressPort, ComponentStatus, TitlesNames):
 
         return self._full_status_string
 
-    # TODO: TitlesNames subclass?
-
     @property
-    def is_down(self):
-        return self._is_down
-
-    @is_down.getter
     def is_down(self):
         if not self.local_machine_status or not self.machine_status or not self.server_status or not self.page_status:
             self._is_down = True
@@ -188,11 +151,8 @@ class WebServerStatusCheck(ServerAddressPort, ComponentStatus, TitlesNames):
             self._is_down = False
         return self._is_down
 
+    # TODO: DownTimeCalculation class?
     @property
-    def down_timestamp(self):
-        return self._down_timestamp
-
-    @down_timestamp.getter
     def down_timestamp(self):
         if self.is_down and not self._down_timestamp:
             self._down_timestamp = datetime.datetime.now().timestamp()
@@ -202,16 +162,35 @@ class WebServerStatusCheck(ServerAddressPort, ComponentStatus, TitlesNames):
 
     @property
     def length_of_time_down(self) -> datetime.timedelta:
-        return self._length_of_time_down
-
-    @length_of_time_down.getter
-    def length_of_time_down(self) -> datetime.timedelta:
         if not self.is_down:
             pass
         else:
             self._length_of_time_down = (datetime.timedelta(seconds=datetime.datetime.now().timestamp())
                                          - datetime.timedelta(seconds=self.down_timestamp))
         return self._length_of_time_down
+
+    def show_message_box(self, title: str, text: str, style: int):
+        if style not in self.WINAPI_MSG_BOX_STYLES.values():
+            try:
+                style = self.WINAPI_MSG_BOX_STYLES['Error_Above_All_OK']
+            except KeyError as e:
+                print(f'Key Error: {e} is not a valid key for winapi_msg_box_styles')
+                self.LOGGER.warning(f'Key Error: {e} is not a valid key for winapi_msg_box_styles')
+                style = None
+            try:
+                if not style:
+                    raise AttributeError("Given style is not valid and default failed!"
+                                         " Windows default message box will be displayed.")
+            except AttributeError as e:
+                print("Given style is not valid and default failed!"
+                      " Windows default message box will be displayed.")
+                self.LOGGER.warning(e)
+        try:
+            winsound.MessageBeep(winsound.MB_ICONHAND)
+        except Exception as e:
+            self.LOGGER.error(e, exc_info=True)
+        # 0 == no parent window
+        return ctypes.windll.user32.MessageBoxW(0, text, title, style)
 
     def log_status(self) -> None:
         if self.server_status:
