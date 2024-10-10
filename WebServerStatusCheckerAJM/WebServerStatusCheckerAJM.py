@@ -18,10 +18,16 @@ from os.path import isdir
 
 import ctypes
 import winsound
-from WebServerStatusCheckerAJM._version import __version__
-from WebServerStatusCheckerAJM.ServerAddressPort import ServerAddressPort
-from WebServerStatusCheckerAJM.ComponentStatus import ComponentStatus
-from WebServerStatusCheckerAJM.TitlesNames import TitlesNames
+try:
+    from WebServerStatusCheckerAJM._version import __version__
+    from WebServerStatusCheckerAJM.ServerAddressPort import ServerAddressPort
+    from WebServerStatusCheckerAJM.ComponentStatus import ComponentStatus
+    from WebServerStatusCheckerAJM.TitlesNames import TitlesNames
+except (ModuleNotFoundError, ImportError):
+    from _version import __version__
+    from ServerAddressPort import ServerAddressPort
+    from ComponentStatus import ComponentStatus
+    from TitlesNames import TitlesNames
 
 
 class WebServerEasyLogger(EasyLogger):
