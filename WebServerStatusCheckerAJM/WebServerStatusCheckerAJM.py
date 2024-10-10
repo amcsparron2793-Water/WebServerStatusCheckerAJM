@@ -7,13 +7,11 @@ Pings a machine to see if it is up, then checks for the presence of a given http
 """
 import datetime
 
-import requests
 from time import sleep
 import platform
 import subprocess
 
 from typing import List, Dict
-from EasyLoggerAJM import EasyLogger
 from os.path import isdir
 
 import ctypes
@@ -28,6 +26,7 @@ except (ModuleNotFoundError, ImportError):
     from ServerAddressPort import ServerAddressPort
     from ComponentStatus import ComponentStatus
     from TitlesNames import TitlesNames
+from EasyLoggerAJM import EasyLogger
 
 
 class WebServerEasyLogger(EasyLogger):
