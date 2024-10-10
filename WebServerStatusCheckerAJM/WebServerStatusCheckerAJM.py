@@ -42,6 +42,7 @@ class WebServerStatusCheck:
         'Cancel_Try Again_Continue': 6,
         'Above_All_OK': 0x1000,
         'Error_Above_All_OK': 0x00000010}
+    INITIALIZATION_STRING = f'Initializing server status checker v{__version__}...'
 
     def __init__(self, server_web_address: str, server_ports: List[int] = None,
                  server_titles: Dict[int, str] = None, use_friendly_server_names: bool = True,
@@ -54,7 +55,7 @@ class WebServerStatusCheck:
         self.use_msg_box_on_error = use_msg_box_on_error
 
         if not self.silent_run and self.init_msg:
-            print(f'Initializing server status checker v{__version__}...')
+            print(self.INITIALIZATION_STRING)
 
         self._initialize_property_vars()
 
