@@ -1,3 +1,2 @@
 from WebServerStatusCheckerAJM import _version
 from WebServerStatusCheckerAJM.WebServerStatusCheckerAJM import WebServerStatusCheck
-

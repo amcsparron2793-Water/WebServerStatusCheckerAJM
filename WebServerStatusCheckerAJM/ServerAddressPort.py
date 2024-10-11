@@ -1,7 +1,34 @@
+from abc import abstractmethod
 from typing import List
 
 
 class ServerAddressPort:
+    """
+    ServerAddressPort class represents a server address and port configuration.
+
+    Parameters:
+    - server_web_address (str): The web address of the server.
+    - server_ports (List[int], optional): The list of available server ports. Defaults to [8000, 80].
+    - server_web_page (str or None, optional): The specific webpage on the server. Defaults to None.
+
+    Attributes:
+    - _server_ports (List[int]): List of available server ports.
+    - _active_server_port (int): The currently active server port.
+    - _server_web_address (str): The web address of the server.
+    - _server_web_page (str): The specific webpage on the server.
+    - _server_full_address (str): Full address including server web address, port, and webpage.
+    - _page_name (str): Name of the webpage derived from the server web address.
+
+    Properties:
+    - server_ports: Getter property to retrieve the list of server ports ensuring they are integers.
+    - active_server_port: Getter and setter property to manage the active server port.
+    - server_web_address: Getter property to handle the server web address ensuring it is formatted correctly.
+    - server_web_page: Getter property to retrieve the server webpage.
+    - server_full_address: Getter property to construct the full server address with port and webpage.
+
+    Note:
+    - The class provides validation and handling of server address, ports, and web page for server communication.
+    """
     LOGGER = None
 
     def __init__(self,  server_web_address: str, server_ports: List[int] = None, server_web_page: str or None = None):
@@ -13,11 +40,22 @@ class ServerAddressPort:
         self._page_name = None
 
     @property
-    def server_ports(self):
-        return self._server_ports
+    @abstractmethod
+    def silent_run(self):
+        """
+        This method defines the silent_run property for a class.
+        It is a read-only property that can be accessed but not modified directly.
+        """
 
-    @server_ports.getter
+    @property
     def server_ports(self):
+        """
+        Property: server_ports
+
+        This property returns a list of server ports. If the property is not set, it defaults to [8000, 80].
+        In case the property is set with a value that is not a list, a TypeError is raised with a corresponding error message.
+        Additionally, if any element of the list is not an integer, a TypeError is raised with an error message.
+        """
         if not self._server_ports:
             self._server_ports = [8000, 80]
         elif not isinstance(self._server_ports, list):
@@ -37,10 +75,17 @@ class ServerAddressPort:
 
     @property
     def active_server_port(self):
+        """
+        Gets the value of the active server port.
+        """
         return self._active_server_port
 
     @active_server_port.setter
     def active_server_port(self, value):
+        """
+        Set the active server port to the specified value if it is present in the list of server ports.
+        If the value is not valid (not in the server ports list), a ValueError is raised.
+        """
         if value in self.server_ports:
             self._active_server_port = value
         else:
@@ -48,11 +93,12 @@ class ServerAddressPort:
 
     @property
     def server_web_address(self):
-        return self._server_web_address
-
-    # noinspection HttpUrlsUsage
-    @server_web_address.getter
-    def server_web_address(self):
+        """
+        This method returns the server web address after performing necessary validation and formatting checks.
+        It ensures that the address starts with either 'http://' or 'https://', warns about potential issues
+        with other protocols, defaults to 'http://' if no scheme is detected, and ensures that the address ends
+        with a slash '/' for consistency. If the input address is not a string, a TypeError is raised.
+        """
         if isinstance(self._server_web_address, str):
             if self._server_web_address.startswith('http://') or self._server_web_address.startswith('https://'):
                 pass
@@ -80,10 +126,10 @@ class ServerAddressPort:
 
     @property
     def server_web_page(self):
-        return self._server_web_page
-
-    @server_web_page.getter
-    def server_web_page(self):
+        """
+        Property to retrieve the web page from the server web address. If the web page has not been previously fetched,
+        it extracts the last segment of the address as the web page and caches it for future use.
+        """
         if self._server_web_page:
             pass
         else:
@@ -92,10 +138,13 @@ class ServerAddressPort:
 
     @property
     def server_full_address(self):
-        return self._server_full_address
+        """
+        Property to return the full address of the server, including the web address, active port, and web page.
+         The function constructs the full address using the server's web address, active port, and web page information.
+          If the constructed address does not end with a '/', a trailing '/' is added.
 
-    @server_full_address.getter
-    def server_full_address(self):
+        Returns the server's full address.
+        """
         self._server_full_address = ('/'.join(self.server_web_address.rsplit('/', maxsplit=1)[:-1])
                                      + f':{self.active_server_port}/' + self.server_web_page)
         if self._server_full_address.endswith('/'):

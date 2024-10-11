@@ -28,8 +28,8 @@ class DownTimeCalculation:
         self._length_of_time_down = datetime.timedelta()
         self._down_timestamp: datetime.datetime or None = None
 
-    @abstractmethod
     @property
+    @abstractmethod
     def is_down(self) -> bool:
         """
         This method represents a property that should be implemented by subclasses to determine

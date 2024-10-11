@@ -180,7 +180,7 @@ class WebServerStatusCheck(_InitWSSCProperties, ServerAddressPort,
                                           self.WINAPI_MSG_BOX_STYLES['Error_Above_All_OK'])
 
                 except Exception as e:
-                    self.LOGGER.warning("could not show msgbox due to - %s" % e)
+                    self.LOGGER.warning("could not show msgbox due to - %s", e)
                     print(f"could not show msgbox due to - {e}")
 
             # this is here purely to make sure down_timestamp is set when the page goes down.
@@ -215,7 +215,7 @@ class WebServerStatusCheck(_InitWSSCProperties, ServerAddressPort,
                 style = self.WINAPI_MSG_BOX_STYLES['Error_Above_All_OK']
             except KeyError as e:
                 print(f'Key Error: {e} is not a valid key for winapi_msg_box_styles')
-                self.LOGGER.warning('Key Error: %s is not a valid key for winapi_msg_box_styles' % e)
+                self.LOGGER.warning('Key Error: %s is not a valid key for winapi_msg_box_styles', e)
                 style = None
             try:
                 if not style:

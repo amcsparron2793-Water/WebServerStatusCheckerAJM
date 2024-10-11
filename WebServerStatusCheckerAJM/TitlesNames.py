@@ -47,8 +47,8 @@ class TitlesNames:
         self._current_server_name = None
         self._page_name = None
 
-    @abstractmethod
     @property
+    @abstractmethod
     def server_web_page(self):
         """
         Decorator indicating an abstract method that must be overridden in a subclass.
@@ -56,8 +56,8 @@ class TitlesNames:
         Returns the server web page.
         """
 
-    @abstractmethod
     @property
+    @abstractmethod
     def server_status(self):
         """
         This method is an abstract property that represents the status of the server.
@@ -65,18 +65,16 @@ class TitlesNames:
         the server status information.
         """
 
-
-    @abstractmethod
     @property
+    @abstractmethod
     def server_full_address(self):
         """
            This method is an abstract property that returns the full address of the server.
            Subclasses must implement this property with the appropriate logic to return the
            server's full address.
         """
-
-    @abstractmethod
     @property
+    @abstractmethod
     def active_server_port(self):
         """
             @abstractmethod
@@ -85,9 +83,8 @@ class TitlesNames:
             This method is an abstract property that should be implemented by subclasses.
             It is used to retrieve the port number of the active server.
         """
-
-    @abstractmethod
     @property
+    @abstractmethod
     def server_web_address(self):
         """
         This method defines an abstract property named server_web_address.

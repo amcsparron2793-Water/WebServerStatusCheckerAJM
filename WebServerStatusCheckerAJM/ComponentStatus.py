@@ -36,9 +36,8 @@ class ComponentStatus:
         self._local_machine_ping_host = '8.8.8.8'
         self._local_machine_status = None
 
-    @property
     @abstractmethod
-    def ping(self):
+    def ping(self, **kwargs):
         """
         @property
         @abstractmethod
