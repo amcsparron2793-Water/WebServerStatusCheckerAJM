@@ -1,11 +1,40 @@
+"""
+DownTimeCalculation
+
+calculates the downtime of the Django/server etc. instance
+"""
+
+
 import datetime
+from abc import abstractmethod
 
 
-# noinspection PyUnresolvedReferences
 class DownTimeCalculation:
+    """
+    Class representing a DownTimeCalculation instance for tracking system downtime.
+
+    __init__(self):
+        Initializes the DownTimeCalculation instance.
+
+    down_timestamp(self):
+        Property method to get the timestamp when the instance was last marked as down.
+        Sets the timestamp when the instance is down and not already set. Returns None if not down.
+
+    length_of_time_down(self) -> datetime.timedelta:
+        Returns the length of time the system has been down. Returns None if the system is not currently down.
+        Calculated by subtracting the down timestamp from the current timestamp.
+    """
     def __init__(self):
         self._length_of_time_down = datetime.timedelta()
         self._down_timestamp: datetime.datetime or None = None
+
+    @abstractmethod
+    @property
+    def is_down(self) -> bool:
+        """
+        This method represents a property that should be implemented by subclasses to determine
+        if an object is in down state or not. It should return a boolean value.
+        """
 
     @property
     def down_timestamp(self):
