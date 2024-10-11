@@ -1,7 +1,5 @@
 from typing import List
 
-import requests
-
 
 class ServerAddressPort:
     LOGGER = None
