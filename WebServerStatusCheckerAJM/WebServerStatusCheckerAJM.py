@@ -16,16 +16,21 @@ from os.path import isdir
 import ctypes
 import winsound
 
+
 try:
     from WebServerStatusCheckerAJM._version import __version__
     from WebServerStatusCheckerAJM.ServerAddressPort import ServerAddressPort
     from WebServerStatusCheckerAJM.ComponentStatus import ComponentStatus
     from WebServerStatusCheckerAJM.TitlesNames import TitlesNames
+    from WebServerStatusCheckerAJM.DownTimeCalculation import DownTimeCalculation
+
 except (ModuleNotFoundError, ImportError):
     from _version import __version__
     from ServerAddressPort import ServerAddressPort
     from ComponentStatus import ComponentStatus
     from TitlesNames import TitlesNames
+    from DownTimeCalculation import DownTimeCalculation
+
 from EasyLoggerAJM import EasyLogger
 
 
@@ -37,7 +42,9 @@ class WebServerEasyLogger(EasyLogger):
         raise NotImplementedError("not implemented yet.")
 
 
-class WebServerStatusCheck(ServerAddressPort, ComponentStatus, TitlesNames):
+class WebServerStatusCheck(ServerAddressPort,
+                           ComponentStatus,
+                           TitlesNames, DownTimeCalculation):
     """
     This class is responsible for checking the status of a web server.
     It can ping a server to check if it is up and running.
@@ -69,6 +76,7 @@ class WebServerStatusCheck(ServerAddressPort, ComponentStatus, TitlesNames):
         ComponentStatus.__init__(self)
         TitlesNames.__init__(self, server_titles=kwargs.get('server_titles', None),
                              use_friendly_server_names=kwargs.get('use_friendly_server_names', True))
+        DownTimeCalculation.__init__(self)
 
         self.init_msg: bool = kwargs.get('init_msg', True)
         self._silent_run = silent_run
@@ -82,8 +90,6 @@ class WebServerStatusCheck(ServerAddressPort, ComponentStatus, TitlesNames):
 
     def _initialize_property_vars(self):
         self._is_down = False
-        self._length_of_time_down = datetime.timedelta()
-        self._down_timestamp: datetime.datetime or None = None
 
         self._print_status = True
 
@@ -182,35 +188,6 @@ class WebServerStatusCheck(ServerAddressPort, ComponentStatus, TitlesNames):
         else:
             self._is_down = False
         return self._is_down
-
-    # TODO: DownTimeCalculation class?
-    @property
-    def down_timestamp(self):
-        """
-        Property method to get the timestamp when the instance was last marked as down.
-        It sets the timestamp when the instance is down and the timestamp is not already set.
-        If the instance is not marked as down, it sets the timestamp value to None.
-
-        Returns the last down timestamp value.
-        """
-        if self.is_down and not self._down_timestamp:
-            self._down_timestamp = datetime.datetime.now().timestamp()
-        elif not self.is_down:
-            self._down_timestamp = None
-        return self._down_timestamp
-
-    @property
-    def length_of_time_down(self) -> datetime.timedelta:
-        """
-        Return the length of time the system has been down. If the system is currently not down, returns None.
-        Calculated by subtracting the down timestamp from the current timestamp.
-        """
-        if not self.is_down:
-            pass
-        else:
-            self._length_of_time_down = (datetime.timedelta(seconds=datetime.datetime.now().timestamp())
-                                         - datetime.timedelta(seconds=self.down_timestamp))
-        return self._length_of_time_down
 
     def show_message_box(self, title: str, text: str, style: int):
         """
@@ -319,7 +296,7 @@ class WebServerStatusCheck(ServerAddressPort, ComponentStatus, TitlesNames):
 
 
 if __name__ == '__main__':
-    sp = [8100]
-    print(f'ports are set to {sp}')
-    WSSC = WebServerStatusCheck('http://10.56.211.116', server_ports=sp)
+    #sp = [8100]
+    #print(f'ports are set to {sp}')
+    WSSC = WebServerStatusCheck('http://10.56.211.116')#, server_ports=sp)
     WSSC.MainLoop()
