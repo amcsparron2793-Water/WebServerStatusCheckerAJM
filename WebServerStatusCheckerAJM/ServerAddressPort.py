@@ -1,15 +1,16 @@
+from typing import List
+
 import requests
 
 
 class ServerAddressPort:
     LOGGER = None
 
-    def __init__(self):
-        self._server_ports = None
-        self._active_server_port = None
-        self._server_web_address = None
-        self._silent_run = False
-        self._server_web_page = None
+    def __init__(self,  server_web_address: str, server_ports: List[int] = None, server_web_page: str or None = None):
+        self._server_ports = server_ports
+        self._active_server_port = self.server_ports[0]
+        self._server_web_address = server_web_address
+        self._server_web_page = server_web_page
         self._server_full_address = None
         self._page_name = None
 

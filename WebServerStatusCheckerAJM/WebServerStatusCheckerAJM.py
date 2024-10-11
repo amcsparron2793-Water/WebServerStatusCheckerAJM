@@ -11,7 +11,6 @@ from time import sleep
 import platform
 import subprocess
 
-from typing import List, Dict
 from os.path import isdir
 
 import ctypes
@@ -62,13 +61,14 @@ class WebServerStatusCheck(ServerAddressPort, ComponentStatus, TitlesNames):
         'Error_Above_All_OK': 0x00000010}
     INITIALIZATION_STRING = f'Initializing server status checker v{__version__}...'
 
-    def __init__(self, server_web_address: str, server_ports: List[int] = None,
-                 server_web_page: str or None = None, silent_run: bool = False,
+    def __init__(self, server_web_address: str, silent_run: bool = False,
                  use_msg_box_on_error: bool = True, **kwargs):
 
-        super().__init__()
+        super().__init__(server_web_address=server_web_address, server_web_page=kwargs.get('server_web_page', None),
+                         server_ports=kwargs.get('server_ports', None))
         ComponentStatus.__init__(self)
-        TitlesNames.__init__(self)
+        TitlesNames.__init__(self, server_titles=kwargs.get('server_titles', None),
+                             use_friendly_server_names=kwargs.get('use_friendly_server_names', True))
 
         self.init_msg: bool = kwargs.get('init_msg', True)
         self._silent_run = silent_run
@@ -80,12 +80,6 @@ class WebServerStatusCheck(ServerAddressPort, ComponentStatus, TitlesNames):
 
         self._initialize_property_vars()
 
-        self._server_ports = server_ports
-        self._active_server_port = self.server_ports[0]
-
-        self._server_web_address = server_web_address
-        self._server_web_page = server_web_page
-
     def _initialize_property_vars(self):
         self._is_down = False
         self._length_of_time_down = datetime.timedelta()
@@ -93,7 +87,6 @@ class WebServerStatusCheck(ServerAddressPort, ComponentStatus, TitlesNames):
 
         self._print_status = True
 
-        self._server_full_address = None
         self._just_started = True
         self._full_status_string = None
         self._server_status_string = None
@@ -272,18 +265,15 @@ class WebServerStatusCheck(ServerAddressPort, ComponentStatus, TitlesNames):
         """
         if status_bool:
             return "UP"
-        else:
-            return "DOWN"
+        return "DOWN"
 
     def ping(self, **kwargs) -> bool:
         """
         Ping the specified host to check for connectivity.
         Returns True if the ping was successful, otherwise returns False.
         """
-        host = None
-        if kwargs:
-            if 'host' in kwargs:
-                host = kwargs['host']
+
+        host = kwargs.get('host', None)
         # Option for the number of packets as a function of
         param = '-n' if platform.system().lower() == 'windows' else '-c'
 
@@ -319,7 +309,7 @@ class WebServerStatusCheck(ServerAddressPort, ComponentStatus, TitlesNames):
                         print(self.full_status_string)
                     self.log_status()
                 sleep(sleep_time)
-        except KeyboardInterrupt as e:
+        except KeyboardInterrupt:
             print("CTRL-C detected, quitting...")
             sleep(1)
             exit(-1)
