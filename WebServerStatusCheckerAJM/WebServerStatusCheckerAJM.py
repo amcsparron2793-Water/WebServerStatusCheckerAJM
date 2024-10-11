@@ -5,6 +5,7 @@ Pings a machine to see if it is up, then checks for the presence of a given http
  (originally conceived for use with Django and Apache).
 
 """
+from sys import exit as sys_exit
 import datetime
 
 from time import sleep
@@ -15,7 +16,6 @@ from os.path import isdir
 
 import ctypes
 import winsound
-
 
 try:
     from WebServerStatusCheckerAJM._version import __version__
@@ -35,68 +35,35 @@ from EasyLoggerAJM import EasyLogger
 
 
 class WebServerEasyLogger(EasyLogger):
+    """
+    in development
+    """
     @classmethod
     def smart_default_log_location(cls):
+        """
+            in development
+        """
         if isdir('../Misc_Project_Files'):
             ...
         raise NotImplementedError("not implemented yet.")
 
 
-class WebServerStatusCheck(ServerAddressPort,
-                           ComponentStatus,
-                           TitlesNames, DownTimeCalculation):
-    """
-    This class is responsible for checking the status of a web server.
-    It can ping a server to check if it is up and running.
-    The class initializes with server details and settings.
-    It provides methods to display status, log status,
-    and show message boxes if errors occur.
-    The class also contains utility functions to handle
-    server status checks and time calculations.
-    The main loop continuously checks and logs the server status.
-    """
+class _InitWSSCProperties:
     LOGGER = EasyLogger.UseLogger().logger
-    WINAPI_MSG_BOX_STYLES = {
-        'OK': 0,
-        'OK_Cancel': 1,
-        'Abort_Retry _Ignore': 2,
-        'Yes_No_Cancel': 3,
-        'Yes_No': 4,
-        'Retry_Cancel': 5,
-        'Cancel_Try Again_Continue': 6,
-        'Above_All_OK': 0x1000,
-        'Error_Above_All_OK': 0x00000010}
     INITIALIZATION_STRING = f'Initializing server status checker v{__version__}...'
 
-    def __init__(self, server_web_address: str, silent_run: bool = False,
-                 use_msg_box_on_error: bool = True, **kwargs):
-
-        super().__init__(server_web_address=server_web_address, server_web_page=kwargs.get('server_web_page', None),
-                         server_ports=kwargs.get('server_ports', None))
-        ComponentStatus.__init__(self)
-        TitlesNames.__init__(self, server_titles=kwargs.get('server_titles', None),
-                             use_friendly_server_names=kwargs.get('use_friendly_server_names', True))
-        DownTimeCalculation.__init__(self)
-
-        self.init_msg: bool = kwargs.get('init_msg', True)
+    def __init__(self, silent_run: bool = False, **kwargs):
         self._silent_run = silent_run
-
-        self.use_msg_box_on_error = use_msg_box_on_error
-
-        if not self.silent_run and self.init_msg:
-            print(self.INITIALIZATION_STRING)
-
-        self._initialize_property_vars()
-
-    def _initialize_property_vars(self):
-        self._is_down = False
 
         self._print_status = True
 
         self._just_started = True
-        self._full_status_string = None
         self._server_status_string = None
         self._page_status_string = None
+
+        self.init_msg: bool = kwargs.get('init_msg', True)
+        if not self.silent_run and self.init_msg:
+            print(self.INITIALIZATION_STRING)
 
     @property
     def silent_run(self):
@@ -144,10 +111,56 @@ class WebServerStatusCheck(ServerAddressPort,
         """
         self._just_started = value
 
+
+class WebServerStatusCheck(_InitWSSCProperties, ServerAddressPort,
+                           ComponentStatus,
+                           TitlesNames, DownTimeCalculation):
+    """
+    This class is responsible for checking the status of a web server.
+    It can ping a server to check if it is up and running.
+    The class initializes with server details and settings.
+    It provides methods to display status, log status,
+    and show message boxes if errors occur.
+    The class also contains utility functions to handle
+    server status checks and time calculations.
+    The main loop continuously checks and logs the server status.
+    """
+    WINAPI_MSG_BOX_STYLES = {
+        'OK': 0,
+        'OK_Cancel': 1,
+        'Abort_Retry _Ignore': 2,
+        'Yes_No_Cancel': 3,
+        'Yes_No': 4,
+        'Retry_Cancel': 5,
+        'Cancel_Try Again_Continue': 6,
+        'Above_All_OK': 0x1000,
+        'Error_Above_All_OK': 0x00000010}
+
+    def __init__(self, server_web_address: str, silent_run: bool = False,
+                 use_msg_box_on_error: bool = True, **kwargs):
+        super().__init__(silent_run=silent_run, init_msg=kwargs.get('init_msg', True))
+        ServerAddressPort.__init__(self,
+                                   server_web_address=server_web_address,
+                                   server_web_page=kwargs.get('server_web_page', None),
+                                   server_ports=kwargs.get('server_ports', None))
+
+        ComponentStatus.__init__(self)
+
+        TitlesNames.__init__(self, server_titles=kwargs.get('server_titles', None),
+                             use_friendly_server_names=kwargs.get('use_friendly_server_names', True))
+        DownTimeCalculation.__init__(self)
+
+        self.use_msg_box_on_error = use_msg_box_on_error
+        self._full_status_string = None
+        self._is_down = False
+
     @property
     def full_status_string(self):
         """
-        This method returns a formatted system status string containing current date and time, active server port, machine status, server name, server status, page name, and page status. If the server is down, it also handles displaying an error message using the specified styles. It ensures that down_timestamp is set when the page goes down.
+        This method returns a formatted system status string containing current date and time, active server port,
+        machine status, server name, server status, page name, and page status. If the server is down,
+        it also handles displaying an error message using the specified styles.
+        It ensures that down_timestamp is set when the page goes down.
         """
         # this was made a variable purely to make the full_status_string declaration more readable.
         cur_datetime = datetime.datetime.now().ctime()
@@ -167,7 +180,7 @@ class WebServerStatusCheck(ServerAddressPort,
                                           self.WINAPI_MSG_BOX_STYLES['Error_Above_All_OK'])
 
                 except Exception as e:
-                    self.LOGGER.warning(f"could not show msgbox due to - {e}")
+                    self.LOGGER.warning("could not show msgbox due to - %s" % e)
                     print(f"could not show msgbox due to - {e}")
 
             # this is here purely to make sure down_timestamp is set when the page goes down.
@@ -202,7 +215,7 @@ class WebServerStatusCheck(ServerAddressPort,
                 style = self.WINAPI_MSG_BOX_STYLES['Error_Above_All_OK']
             except KeyError as e:
                 print(f'Key Error: {e} is not a valid key for winapi_msg_box_styles')
-                self.LOGGER.warning(f'Key Error: {e} is not a valid key for winapi_msg_box_styles')
+                self.LOGGER.warning('Key Error: %s is not a valid key for winapi_msg_box_styles' % e)
                 style = None
             try:
                 if not style:
@@ -289,7 +302,7 @@ class WebServerStatusCheck(ServerAddressPort,
         except KeyboardInterrupt:
             print("CTRL-C detected, quitting...")
             sleep(1)
-            exit(-1)
+            sys_exit(-1)
         except Exception as e:
             self.LOGGER.error(e, exc_info=True)
             raise e
@@ -298,5 +311,5 @@ class WebServerStatusCheck(ServerAddressPort,
 if __name__ == '__main__':
     #sp = [8100]
     #print(f'ports are set to {sp}')
-    WSSC = WebServerStatusCheck('http://10.56.211.116')#, server_ports=sp)
+    WSSC = WebServerStatusCheck('http://10.56.211.116')  #, server_ports=sp)
     WSSC.MainLoop()

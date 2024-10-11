@@ -7,37 +7,37 @@ from WebServerStatusCheckerAJM.WebServerStatusCheckerAJM import WebServerStatusC
 
 class WSSCTests(unittest.TestCase):
     def setUp(self) -> None:
-        self.bad_port_WSSC = WebServerStatusCheck('http://10.56.211.116/', [80, 8010],
+        self.bad_port_WSSC = WebServerStatusCheck('http://10.56.211.116/', server_ports=[80, 8010],
                                                   silent_run=True)
         self.bad_port_WSSC.active_server_port = self.bad_port_WSSC.server_ports[1]
-        self.good_ports_WSSC = WebServerStatusCheck('http://10.56.211.116/', [80, 8000],
+        self.good_ports_WSSC = WebServerStatusCheck('http://10.56.211.116/', server_ports=[80, 8000],
                                                     silent_run=True)
-        self.no_box_WSSC = WebServerStatusCheck('http://10.56.211.116/', [80, 8010],
+        self.no_box_WSSC = WebServerStatusCheck('http://10.56.211.116/', server_ports=[80, 8010],
                                                 use_msg_box_on_error=False, silent_run=True)
         self.no_box_WSSC.active_server_port = self.no_box_WSSC.server_ports[1]
 
     def test_server_ports_not_int_fail(self):
         with self.assertRaises(TypeError):
-            WebServerStatusCheck('http://10.56.211.116/', [80, 'teta'])
+            WebServerStatusCheck('http://10.56.211.116/', server_ports=[80, 'teta'])
 
     def test_server_ports_not_list_fail(self):
         with self.assertRaises(TypeError):
             # noinspection PyTypeChecker
-            WebServerStatusCheck('http://10.56.211.116/', (80, 'teta'))
+            WebServerStatusCheck('http://10.56.211.116/', server_ports=(80, 'teta'))
 
     def test_no_init_msg_true(self):
-        init_msg_False_WSSC = WebServerStatusCheck('http://10.56.211.116/', [80, 8000],
+        init_msg_False_WSSC = WebServerStatusCheck('http://10.56.211.116/', server_ports=[80, 8000],
                                                    init_msg=False)
-        init_msg_True_WSSC = WebServerStatusCheck('http://10.56.211.116/', [80, 8000],
+        init_msg_True_WSSC = WebServerStatusCheck('http://10.56.211.116/', server_ports=[80, 8000],
                                                   init_msg=True)
-        init_msg_default_WSSC = WebServerStatusCheck('http://10.56.211.116/', [80, 8000])
+        init_msg_default_WSSC = WebServerStatusCheck('http://10.56.211.116/', server_ports=[80, 8000])
 
         self.assertIs(init_msg_False_WSSC.init_msg, False)
         self.assertIs(init_msg_True_WSSC.init_msg, True)
         self.assertIs(init_msg_default_WSSC.init_msg, True)
 
     def test_silent_run_silences_init_msg(self):
-        silent_run_silences_init_WSSC = WebServerStatusCheck('http://10.56.211.116/', [80, 8000],
+        silent_run_silences_init_WSSC = WebServerStatusCheck('http://10.56.211.116/', server_ports=[80, 8000],
                                                              silent_run=True)
         try:
             raise NotImplementedError("still working on this")
@@ -62,7 +62,7 @@ class WSSCTests(unittest.TestCase):
                       self.good_ports_WSSC.full_status_string.lower())
 
     def test_local_machine_status_port_defaults_to_eight_dot(self):
-        WSSC = WebServerStatusCheck('http://10.56.211.116/', [80, 8000],
+        WSSC = WebServerStatusCheck('http://10.56.211.116/', server_ports=[80, 8000],
                                     silent_run=True)
         self.assertEqual(WSSC.local_machine_ping_host, '8.8.8.8')
 
@@ -87,6 +87,7 @@ class WSSCTests(unittest.TestCase):
             self.good_ports_WSSC.local_machine_ping_host = 1234
 
     def test_downtime_makes_sense(self):
+        # FIXME: this test always fails if the server is not running on 80
         self.bad_port_WSSC.use_msg_box_on_error = False
         for p in self.bad_port_WSSC.server_ports:
             self.bad_port_WSSC.active_server_port = p
@@ -100,8 +101,10 @@ class WSSCTests(unittest.TestCase):
             if self.bad_port_WSSC.is_down:
                 # make sure it actually slept for at least s_time if not more,
                 # but not more than sleep_time_plus_deadzone
-                self.assertGreaterEqual(self.bad_port_WSSC.length_of_time_down, timedelta(seconds=s_time.total_seconds()))
-                self.assertLessEqual(self.bad_port_WSSC.length_of_time_down, timedelta(seconds=sleep_time_plus_deadzone.total_seconds()))
+                self.assertGreaterEqual(self.bad_port_WSSC.length_of_time_down,
+                                        timedelta(seconds=s_time.total_seconds()))
+                self.assertLessEqual(self.bad_port_WSSC.length_of_time_down,
+                                     timedelta(seconds=sleep_time_plus_deadzone.total_seconds()))
                 print(f"actual downtime was {self.bad_port_WSSC.length_of_time_down}")
             else:
                 print(timedelta(seconds=0), self.bad_port_WSSC.length_of_time_down)
