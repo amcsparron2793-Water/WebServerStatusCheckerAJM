@@ -38,6 +38,16 @@ class WebServerEasyLogger(EasyLogger):
 
 
 class WebServerStatusCheck(ServerAddressPort, ComponentStatus, TitlesNames):
+    """
+    This class is responsible for checking the status of a web server.
+    It can ping a server to check if it is up and running.
+    The class initializes with server details and settings.
+    It provides methods to display status, log status,
+    and show message boxes if errors occur.
+    The class also contains utility functions to handle
+    server status checks and time calculations.
+    The main loop continuously checks and logs the server status.
+    """
     LOGGER = EasyLogger.UseLogger().logger
     WINAPI_MSG_BOX_STYLES = {
         'OK': 0,
@@ -97,10 +107,20 @@ class WebServerStatusCheck(ServerAddressPort, ComponentStatus, TitlesNames):
 
     @property
     def silent_run(self):
+        """
+        @property
+        Represents a boolean flag indicating whether the software should run silently
+         without displaying any output or not. By accessing this property, the value of the
+         _silent_run attribute is retrieved. This property is read-only and cannot be modified directly.
+        """
         return self._silent_run
 
     @property
     def print_status(self):
+        """
+        Getter method for the "print_status" property.
+        Returns the value of the "_print_status" attribute if silent_run is False, otherwise returns False.
+        """
         if self.silent_run:
             self._print_status = False
         else:
@@ -109,18 +129,33 @@ class WebServerStatusCheck(ServerAddressPort, ComponentStatus, TitlesNames):
 
     @print_status.setter
     def print_status(self, value):
+        """
+        Setter method for updating the print_status attribute of an object.
+        This property allows control over whether the object should print its status or not.
+        """
         self._print_status = value
 
     @property
     def just_started(self):
+        """
+        @property
+        Get the value of the just_started property.
+        This property indicates whether the software has just started or not.
+        """
         return self._just_started
 
     @just_started.setter
     def just_started(self, value: bool):
+        """
+        Set the value of the boolean attribute '_just_started' to the provided value.
+        """
         self._just_started = value
 
     @property
     def full_status_string(self):
+        """
+        This method returns a formatted system status string containing current date and time, active server port, machine status, server name, server status, page name, and page status. If the server is down, it also handles displaying an error message using the specified styles. It ensures that down_timestamp is set when the page goes down.
+        """
         # this was made a variable purely to make the full_status_string declaration more readable.
         cur_datetime = datetime.datetime.now().ctime()
         self._full_status_string = (f"\t{cur_datetime}: System Status on port {self.active_server_port} is:"
@@ -150,6 +185,11 @@ class WebServerStatusCheck(ServerAddressPort, ComponentStatus, TitlesNames):
 
     @property
     def is_down(self):
+        """
+        This is a property method that checks the status of multiple components (local_machine_status, machine_status,
+        server_status, page_status) to determine if the overall status is down.
+        It returns a boolean value indicating whether the components are in a down state.
+        """
         if not self.local_machine_status or not self.machine_status or not self.server_status or not self.page_status:
             self._is_down = True
         else:
@@ -159,6 +199,13 @@ class WebServerStatusCheck(ServerAddressPort, ComponentStatus, TitlesNames):
     # TODO: DownTimeCalculation class?
     @property
     def down_timestamp(self):
+        """
+        Property method to get the timestamp when the instance was last marked as down.
+        It sets the timestamp when the instance is down and the timestamp is not already set.
+        If the instance is not marked as down, it sets the timestamp value to None.
+
+        Returns the last down timestamp value.
+        """
         if self.is_down and not self._down_timestamp:
             self._down_timestamp = datetime.datetime.now().timestamp()
         elif not self.is_down:
@@ -167,6 +214,10 @@ class WebServerStatusCheck(ServerAddressPort, ComponentStatus, TitlesNames):
 
     @property
     def length_of_time_down(self) -> datetime.timedelta:
+        """
+        Return the length of time the system has been down. If the system is currently not down, returns None.
+        Calculated by subtracting the down timestamp from the current timestamp.
+        """
         if not self.is_down:
             pass
         else:
@@ -175,6 +226,13 @@ class WebServerStatusCheck(ServerAddressPort, ComponentStatus, TitlesNames):
         return self._length_of_time_down
 
     def show_message_box(self, title: str, text: str, style: int):
+        """
+        Displays a message box with the given title and text using the specified style.
+         If the provided style is not valid, it falls back to a default style ('Error_Above_All_OK').
+         If the style is still invalid, a warning message is logged and the default Windows message box is displayed.
+         Finally, an error sound is played using MessageBeep if the 'MB_ICONHAND' style is encountered.
+         The function returns the result of the MessageBoxW call from the user32 library.
+        """
         if style not in self.WINAPI_MSG_BOX_STYLES.values():
             try:
                 style = self.WINAPI_MSG_BOX_STYLES['Error_Above_All_OK']
@@ -198,6 +256,12 @@ class WebServerStatusCheck(ServerAddressPort, ComponentStatus, TitlesNames):
         return ctypes.windll.user32.MessageBoxW(0, text, title, style)
 
     def log_status(self) -> None:
+        """
+        Logs the status based on the server status and page status. If the server status is true and
+        the page status is true, it logs the full status string at info level. If the server status is true but
+        the page status is false, it logs the full status string at warning level. If the server status is false,
+        it logs the full status string at critical level.
+        """
         if self.server_status:
             if self.page_status:
                 self.LOGGER.info(self.full_status_string)
@@ -208,6 +272,10 @@ class WebServerStatusCheck(ServerAddressPort, ComponentStatus, TitlesNames):
 
     @staticmethod
     def get_status_string(status_bool: bool) -> str:
+        """
+        Converts a boolean status into a string representation.
+        Returns "UP" if the status is True, and "DOWN" if the status is False.
+        """
         if status_bool:
             return "UP"
         else:
@@ -215,8 +283,8 @@ class WebServerStatusCheck(ServerAddressPort, ComponentStatus, TitlesNames):
 
     def ping(self, **kwargs) -> bool:
         """
-        Returns True if host (str) responds to a ping request.
-        Remember that a host may not respond to a ping (ICMP) request even if the host name is valid.
+        Ping the specified host to check for connectivity.
+        Returns True if the ping was successful, otherwise returns False.
         """
         host = None
         if kwargs:
@@ -236,6 +304,13 @@ class WebServerStatusCheck(ServerAddressPort, ComponentStatus, TitlesNames):
         return ping_result
 
     def MainLoop(self, sleep_time: int = 120):
+        """
+        MainLoop method runs an infinite loop that periodically checks the status of server ports.
+        It first sets up necessary variables and prints messages if required. It then iterates through all server ports,
+         updating the active server port and printing the full status string. The method logs the status after each
+         iteration and sleeps for the specified time interval. If a KeyboardInterrupt is caught,
+         it prints a termination message and exits. Any other exceptions are logged as errors and re-raised.
+        """
         sleep(1)
         try:
             while True:
