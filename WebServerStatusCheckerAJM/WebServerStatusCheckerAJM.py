@@ -16,6 +16,7 @@ from os.path import isdir
 
 import ctypes
 import winsound
+
 try:
     from WebServerStatusCheckerAJM._version import __version__
     from WebServerStatusCheckerAJM.ServerAddressPort import ServerAddressPort
@@ -61,11 +62,14 @@ class WebServerStatusCheck(ServerAddressPort, ComponentStatus, TitlesNames):
         'Error_Above_All_OK': 0x00000010}
     INITIALIZATION_STRING = f'Initializing server status checker v{__version__}...'
 
-    def __init__(self, server_web_address: str, server_ports: List[int] = None, server_titles: Dict[int, str] = None,
-                 use_friendly_server_names: bool = True, server_web_page: str or None = None, silent_run: bool = False,
+    def __init__(self, server_web_address: str, server_ports: List[int] = None,
+                 server_web_page: str or None = None, silent_run: bool = False,
                  use_msg_box_on_error: bool = True, **kwargs):
 
         super().__init__()
+        ComponentStatus.__init__(self)
+        TitlesNames.__init__(self)
+
         self.init_msg: bool = kwargs.get('init_msg', True)
         self._silent_run = silent_run
 
@@ -77,8 +81,6 @@ class WebServerStatusCheck(ServerAddressPort, ComponentStatus, TitlesNames):
         self._initialize_property_vars()
 
         self._server_ports = server_ports
-        self._server_titles = server_titles
-        self._use_friendly_server_names = use_friendly_server_names
         self._active_server_port = self.server_ports[0]
 
         self._server_web_address = server_web_address
@@ -94,9 +96,6 @@ class WebServerStatusCheck(ServerAddressPort, ComponentStatus, TitlesNames):
         self._local_machine_status = None
         self._print_status = True
 
-        self._html_title = None
-        self._page_name = None
-        self._current_server_name = None
         self._server_full_address = None
         self._just_started = True
         self._server_status = None

@@ -1,13 +1,15 @@
 import requests
+from typing import Dict
 
 
+# noinspection PyUnresolvedReferences
 class TitlesNames:
     LOGGER = None
 
-    def __init__(self):
+    def __init__(self, server_titles: Dict[int, str] = None, use_friendly_server_names: bool = True):
         self._html_title = None
-        self._server_titles = None
-        self._use_friendly_server_names = None
+        self._server_titles = server_titles
+        self._use_friendly_server_names = use_friendly_server_names
         self._current_server_name = None
         self._page_name = None
 
@@ -37,6 +39,14 @@ class TitlesNames:
     @property
     def html_title(self):
         return self._html_title
+
+    @html_title.setter
+    def html_title(self, req_content):
+        req_content = str(req_content)
+        if '<title>' in req_content:
+            x = req_content.split('<title>')[-1]
+            if '</title>' in x:
+                self._html_title = x.split('</title>')[0]
 
     @property
     def server_titles(self):
@@ -75,11 +85,3 @@ class TitlesNames:
         if not self._current_server_name:
             self._current_server_name = self.server_web_address
         return self._current_server_name
-
-    @html_title.setter
-    def html_title(self, req_content):
-        req_content = str(req_content)
-        if '<title>' in req_content:
-            x = req_content.split('<title>')[-1]
-            if '</title>' in x:
-                self._html_title = x.split('</title>')[0]
