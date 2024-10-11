@@ -7,11 +7,10 @@ class ComponentStatus:
     LOGGER = None
 
     def __init__(self):
-
         self._server_status = None
         self._page_status = None
         self._machine_status = None
-        self._local_machine_ping_host = None
+        self._local_machine_ping_host = '8.8.8.8'
         self._local_machine_status = None
 
     @property

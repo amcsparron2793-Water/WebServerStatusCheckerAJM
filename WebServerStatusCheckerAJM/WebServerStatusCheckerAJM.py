@@ -91,15 +91,10 @@ class WebServerStatusCheck(ServerAddressPort, ComponentStatus, TitlesNames):
         self._length_of_time_down = datetime.timedelta()
         self._down_timestamp: datetime.datetime or None = None
 
-        self._machine_status = None
-        self._local_machine_ping_host = '8.8.8.8'
-        self._local_machine_status = None
         self._print_status = True
 
         self._server_full_address = None
         self._just_started = True
-        self._server_status = None
-        self._page_status = None
         self._full_status_string = None
         self._server_status_string = None
         self._page_status_string = None
