@@ -4,3 +4,6 @@ EasyLoggerAJM==0.1
 idna==3.6
 requests==2.31.0
 urllib3==2.2.1
+
+ColorizerAJM==0.3.1
+packaging==25.0

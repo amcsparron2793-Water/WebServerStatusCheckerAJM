@@ -32,6 +32,7 @@ except (ModuleNotFoundError, ImportError):
     from DownTimeCalculation import DownTimeCalculation
 
 from EasyLoggerAJM import EasyLogger
+from ColorizerAJM.ColorizerAJM import Colorizer
 
 
 class WebServerEasyLogger(EasyLogger):
@@ -139,6 +140,8 @@ class WebServerStatusCheck(_InitWSSCProperties, ServerAddressPort,
     def __init__(self, server_web_address: str, silent_run: bool = False,
                  use_msg_box_on_error: bool = True, **kwargs):
         super().__init__(silent_run=silent_run, init_msg=kwargs.get('init_msg', True))
+        self.use_colorizer = kwargs.pop('use_colorizer', True)
+
         ServerAddressPort.__init__(self,
                                    server_web_address=server_web_address,
                                    server_web_page=kwargs.get('server_web_page', None),
@@ -149,6 +152,11 @@ class WebServerStatusCheck(_InitWSSCProperties, ServerAddressPort,
         TitlesNames.__init__(self, server_titles=kwargs.get('server_titles', None),
                              use_friendly_server_names=kwargs.get('use_friendly_server_names', True))
         DownTimeCalculation.__init__(self)
+
+        if self.use_colorizer:
+            self.colorizer = Colorizer()
+        else:
+            self.colorizer = None
 
         self.use_msg_box_on_error = use_msg_box_on_error
         self._full_status_string = None
@@ -187,6 +195,11 @@ class WebServerStatusCheck(_InitWSSCProperties, ServerAddressPort,
             x = self.down_timestamp
             del x
 
+        if self.use_colorizer:
+            if self.is_down:
+                self._full_status_string = self.colorizer.colorize(self._full_status_string, Colorizer.RED)
+            else:
+                self._full_status_string = self.colorizer.colorize(self._full_status_string, Colorizer.GREEN)
         return self._full_status_string
 
     @property
@@ -311,5 +324,5 @@ class WebServerStatusCheck(_InitWSSCProperties, ServerAddressPort,
 if __name__ == '__main__':
     #sp = [8100]
     #print(f'ports are set to {sp}')
-    WSSC = WebServerStatusCheck('http://10.56.211.116')  #, server_ports=sp)
+    WSSC = WebServerStatusCheck('http://10.56.211.114')  #, server_ports=sp)
     WSSC.MainLoop()
